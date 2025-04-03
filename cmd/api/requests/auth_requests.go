@@ -28,3 +28,7 @@ type ResetPasswordRequest struct {
 	Token           string `json:"token" validate:"required,min=5"`
 	Meta            string `json:"meta" validate:"required"`
 }
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}

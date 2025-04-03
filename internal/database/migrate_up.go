@@ -12,7 +12,19 @@ func main() {
 		panic(err.Error())
 	}
 
-	err = db.AutoMigrate(&models.RoleModel{}, &models.CartModel{}, &models.ShippingAddressModel{}, &models.UserModel{}, &models.AppTokenModel{})
+	err = db.AutoMigrate(
+		&models.RoleModel{},
+		&models.CartModel{},
+		&models.ShippingAddressModel{},
+		&models.UserModel{},
+		&models.VerificationTokenModel{},
+		&models.CategoryModel{},
+		&models.ProductModel{},
+		&models.OptionModel{},
+		&models.MCategoryModel{},
+		&models.AccountModel{},
+		&models.SessionModel{},
+	)
 
 	if err != nil {
 		panic(err.Error())

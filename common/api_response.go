@@ -63,6 +63,10 @@ func SendInternalServerErrorResponse(c echo.Context, message string) error {
 	return SendErrorResponse(c, message, http.StatusInternalServerError)
 }
 
+func SendForbiddenResponse(c echo.Context, message string) error {
+	return SendErrorResponse(c, message, http.StatusForbidden)
+}
+
 func SendUnauthorizedResponse(c echo.Context, message string) error {
 	return SendErrorResponse(c, message, http.StatusUnauthorized)
 }

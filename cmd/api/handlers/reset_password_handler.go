@@ -24,7 +24,7 @@ func (h *Handler) ForgotPasswordHandler(c echo.Context) error {
 	}
 
 	userService := services.NewUserService(h.DB)
-	appTokenService := services.NewAppTokenService(h.DB)
+	verificationTokenService := services.NewVerificationTokenService(h.DB)
 
 	existingUser, err := userService.GetByEmail(payload.Email)
 	if err != nil {
@@ -34,7 +34,7 @@ func (h *Handler) ForgotPasswordHandler(c echo.Context) error {
 		return common.SendInternalServerErrorResponse(c, "An error occurred, try again later")
 	}
 
-	token, err := appTokenService.GenerateResetPasswordToken(*existingUser)
+	token, err := verificationTokenService.GenerateResetPasswordToken(*existingUser)
 	if err != nil {
 		return common.SendInternalServerErrorResponse(c, "An error occurred, try again later")
 	}
@@ -87,7 +87,7 @@ func (h *Handler) ResetPasswordHandler(c echo.Context) error {
 	}
 
 	userService := services.NewUserService(h.DB)
-	appTokenService := services.NewAppTokenService(h.DB)
+	verificationTokenService := services.NewVerificationTokenService(h.DB)
 
 	existingUser, err := userService.GetByEmail(string(email))
 	if err != nil {
@@ -97,7 +97,7 @@ func (h *Handler) ResetPasswordHandler(c echo.Context) error {
 		return common.SendInternalServerErrorResponse(c, "An error occurred, try again later")
 	}
 
-	appToken, err := appTokenService.ValidateResetPasswordToken(*existingUser, payload.Token)
+	appToken, err := verificationTokenService.ValidateResetPasswordToken(*existingUser, payload.Token)
 	if err != nil {
 		return common.SendInternalServerErrorResponse(c, err.Error())
 	}
@@ -107,7 +107,7 @@ func (h *Handler) ResetPasswordHandler(c echo.Context) error {
 		return common.SendInternalServerErrorResponse(c, err.Error())
 	}
 
-	appTokenService.InvalidateToken(existingUser.Id, *appToken)
+	verificationTokenService.InvalidateToken(existingUser.ID, *appToken)
 
 	return common.SendSuccessResponse(c, "Password reset successfully", nil)
 }

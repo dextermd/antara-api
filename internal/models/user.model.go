@@ -14,8 +14,10 @@ type UserModel struct {
 	PaymentMethod *string    `gorm:"type:varchar(255);default:null" json:"payment_method"`
 	LastOnline    time.Time  `gorm:"autoUpdateTime" json:"last_online"`
 
-	Roles             []RoleModel            `gorm:"many2many:user_has_roles;" json:"roles"`
+	Roles             []RoleModel            `gorm:"many2many:user_has_roles;joinForeignKey:UserID;joinReferences:RoleID" json:"roles"`
 	Carts             []CartModel            `gorm:"foreignKey:UserID" json:"carts"`
+	Accounts          []AccountModel         `gorm:"foreignKey:UserID" json:"accounts"`
+	Sessions          []SessionModel         `gorm:"foreignKey:UserID" json:"sessions"`
 	ShippingAddresses []ShippingAddressModel `gorm:"foreignKey:UserID" json:"shipping_addresses"`
 }
 

@@ -26,6 +26,9 @@ dev:
 	echo "Starting Application In Development Mode with air"
 	air
 
+seed:
+	echo "Running seeders"
+	go run ./internal/database/seeders/seed.go
 
 migrate:
 	echo "Running migrations up"

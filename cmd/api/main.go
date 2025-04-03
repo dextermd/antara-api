@@ -45,6 +45,14 @@ func main() {
 		DB:     db,
 	}
 
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:4200", "http://127.0.0.1:4200"},
+		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
+		AllowHeaders:     []string{"Content-Type", "Authorization", "Cookie", "Set-Cookie"},
+		ExposeHeaders:    []string{"Set-Cookie"},
+		AllowCredentials: true,
+	}))
+
 	app := Application{
 		logger:        e.Logger,
 		server:        e,
@@ -53,8 +61,11 @@ func main() {
 	}
 
 	e.Use(middlewares.CustomMiddleware, middleware.Logger(), middleware.Recover())
+
 	app.routes(e, h)
 	fmt.Println(app)
+
+	e.Static("/uploads", "./uploads")
 
 	port := os.Getenv("APP_PORT")
 	host := os.Getenv("APP_HOST")

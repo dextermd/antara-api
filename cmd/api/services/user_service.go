@@ -38,7 +38,16 @@ func (userService *UserService) CreateUser(signUpRequest *requests.SignUpRequest
 
 func (userService *UserService) GetByEmail(email string) (*models.UserModel, error) {
 	var user models.UserModel
-	result := userService.db.Where("email = ?", email).First(&user)
+	result := userService.db.Preload("Roles").Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
+func (userService *UserService) GetById(id uint) (*models.UserModel, error) {
+	var user models.UserModel
+	result := userService.db.Preload("Roles").First(&user, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
