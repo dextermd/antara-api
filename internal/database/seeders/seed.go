@@ -30,9 +30,9 @@ func seedDatabase() error {
 	}
 
 	users := []models.UserModel{
-		{Name: ptr("Demo Admin"), Email: "admin@example.com", Password: password, Roles: []models.RoleModel{}},
-		{Name: ptr("Demo Moderator"), Email: "moderator@example.com", Password: password, Roles: []models.RoleModel{}},
-		{Name: ptr("Demo User"), Email: "user@example.com", Password: password, Roles: []models.RoleModel{}},
+		{FirstName: ptr("Demo Admin"), Email: "admin@example.com", PasswordHash: password, Roles: []models.RoleModel{}},
+		{FirstName: ptr("Demo Moderator"), Email: "moderator@example.com", PasswordHash: password, Roles: []models.RoleModel{}},
+		{FirstName: ptr("Demo User"), Email: "user@example.com", PasswordHash: password, Roles: []models.RoleModel{}},
 	}
 
 	products := []models.ProductModel{
@@ -40,7 +40,7 @@ func seedDatabase() error {
 			Name:        "Заправка Samsung MLT-D104S (+чип)",
 			Slug:        "zaprawka-samsung-mlt-d104s-chip",
 			Description: ptr("Заправка картриджа Samsung MLT-D104S с установкой чипа. Заправка производится на профессиональном оборудовании с использованием высококачественного тонера. После заправки картридж проходит тестирование на печать и проверку чипа."),
-			Images:      pq.StringArray{"/demo-products/p1-1.jpg", "/demo-products/p1-1.jpg"},
+			Images:      pq.StringArray{"/products/p1-1.jpg", "/products/p1-1.jpg"},
 			Price:       59.99,
 			Brand:       "Samsung",
 			Rating:      4.5,
@@ -53,7 +53,7 @@ func seedDatabase() error {
 			Name:        "Заправка Brother TN-1085",
 			Slug:        "zaprawka-brother-tm-1085",
 			Description: ptr("Заправка картриджа Brother TN-1075. Заправка производится на профессиональном оборудовании с использованием высококачественного тонера. После заправки картридж проходит тестирование на печать."),
-			Images:      pq.StringArray{"/demo-products/p2-1.jpg", "/demo-products/p2-1.jpg"},
+			Images:      pq.StringArray{"/products/p2-1.jpg", "/products/p2-1.jpg"},
 			Price:       85.9,
 			Brand:       "Brother",
 			Rating:      4.2,
@@ -66,7 +66,7 @@ func seedDatabase() error {
 			Name:        "Картридж РО MLT-D104S",
 			Slug:        "kartirzh-ro-mlt-d104s",
 			Description: ptr("Картридж РО MLT-D104S"),
-			Images:      pq.StringArray{"/demo-products/p3-1.jpg", "/demo-products/p3-1.jpg"},
+			Images:      pq.StringArray{"/products/p3-1.jpg", "/products/p3-1.jpg"},
 			Price:       99.95,
 			Brand:       "Samsung",
 			Rating:      4.9,
@@ -79,7 +79,7 @@ func seedDatabase() error {
 			Name:        "Заправка HP CF226X",
 			Slug:        "zaprawka-hp-cf226x",
 			Description: ptr("Заправка картриджа HP CF226X"),
-			Images:      pq.StringArray{"/demo-products/p4-1.jpg", "/demo-products/p4-1.jpg"},
+			Images:      pq.StringArray{"/products/p4-1.jpg", "/products/p4-1.jpg"},
 			Price:       39.95,
 			Brand:       "HP",
 			Rating:      3.6,
@@ -92,7 +92,7 @@ func seedDatabase() error {
 			Name:        "G&G NT-CF226X",
 			Slug:        "g-g-nt-cf226x",
 			Description: ptr("Картридж G&G NT-CF226X"),
-			Images:      pq.StringArray{"/demo-products/p5-1.png", "/demo-products/p5-1.png"},
+			Images:      pq.StringArray{"/products/p5-1.png", "/products/p5-1.png"},
 			Price:       79.99,
 			Brand:       "Brother",
 			Rating:      4.7,
@@ -105,7 +105,7 @@ func seedDatabase() error {
 			Name:        "Картридж C-CLT-Y406S совместимый",
 			Slug:        "kartirzh-c-clt-y406s-sovmestimiy",
 			Description: ptr("Картридж C-CLT-Y406S совместимый"),
-			Images:      pq.StringArray{"/demo-products/p5-1.png", "/demo-products/p5-1.png"},
+			Images:      pq.StringArray{"/products/p5-1.png", "/products/p5-1.png"},
 			Price:       99.99,
 			Brand:       "Samsung",
 			Rating:      4.6,
@@ -123,7 +123,7 @@ func seedDatabase() error {
 	for i := range users {
 
 		var role *models.RoleModel
-		switch *users[i].Name {
+		switch *users[i].FirstName {
 		case "Demo Admin":
 			role = &roles[0] // Администратор
 		case "Demo Moderator":

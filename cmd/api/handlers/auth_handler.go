@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"antara-api/cmd/api/requests"
+	"antara-api/cmd/api/dtos/requests"
+	"antara-api/cmd/api/dtos/response"
 	"antara-api/cmd/api/services"
 	"antara-api/common"
 	"antara-api/internal/mailer"
@@ -11,8 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"net/http"
-	"strings"
-	"time"
 )
 
 func (h *Handler) SignUpHandler(c echo.Context) error {
@@ -45,7 +44,7 @@ func (h *Handler) SignUpHandler(c echo.Context) error {
 			Name      string
 			LoginLink string
 		}{
-			Name:      *registeredUser.Name,
+			Name:      *registeredUser.FirstName,
 			LoginLink: "#",
 		},
 	}
@@ -59,8 +58,6 @@ func (h *Handler) SignUpHandler(c echo.Context) error {
 }
 
 func (h *Handler) SignInHandler(c echo.Context) error {
-	userService := services.NewUserService(h.DB)
-
 	payload := new(requests.SignInRequest)
 	if err := c.Bind(payload); err != nil {
 		return common.SendBadRequestResponse(c, err.Error())
@@ -71,6 +68,7 @@ func (h *Handler) SignInHandler(c echo.Context) error {
 		return common.SendFailedValidationResponse(c, validationErrors)
 	}
 
+	userService := services.NewUserService(h.DB)
 	userRetrieved, err := userService.GetByEmail(payload.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) && userRetrieved == nil {
@@ -79,119 +77,38 @@ func (h *Handler) SignInHandler(c echo.Context) error {
 		return common.SendInternalServerErrorResponse(c, "An error occurred, try again later")
 	}
 
-	if common.ComparePasswordHash(userRetrieved.Password, payload.Password) == false {
+	if userRetrieved.IsActive == false {
+		return common.SendBadRequestResponse(c, "User is not active")
+	}
+
+	if common.ComparePasswordHash(userRetrieved.PasswordHash, payload.Password) == false {
 		return common.SendBadRequestResponse(c, "Invalid email or password")
 	}
 
-	accessToken, refreshToken, err := common.GenerateJWT(*userRetrieved)
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
-	}
-
-	sessionID, err := common.GenerateSessionID()
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
-	}
-
-	session := models.SessionModel{
-		UserID:       userRetrieved.ID,
-		SessionID:    sessionID,
-		AccessToken:  *accessToken,
-		RefreshToken: *refreshToken,
-		IPAddress:    c.RealIP(),
-		UserAgent:    c.Request().Header.Get("User-Agent"),
-		ExpiresAt:    common.GetRefreshTokenExpirationTime(),
-	}
-
 	sessionService := services.NewSessionService(h.DB)
-	_, err = sessionService.CreateSession(session)
+	session, err := sessionService.CreateSession(userRetrieved.ID, payload.Device, c.Request().Header.Get("User-Agent"), c.RealIP())
 	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
+		h.Logger.Error("Failed to create session: ", err)
+		return common.SendInternalServerErrorResponse(c, "Failed to create session")
 	}
 
-	c.SetCookie(&http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "session_id",
-		Value:    sessionID,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Value:    session.ID,
 		Path:     "/",
-	})
-
-	return common.SendSuccessResponse(c, "User logged in", map[string]interface{}{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-		"user":          userRetrieved,
-	})
-}
-
-func (h *Handler) RefreshTokenHandler(c echo.Context) error {
-	sessionCookie, err := c.Cookie("session_id")
-	if err != nil {
-		return common.SendBadRequestResponse(c, "No session found")
-	}
-	fmt.Println("RefreshTokenHandler -> Session ID: ", sessionCookie.Value)
-
-	sessionService := services.NewSessionService(h.DB)
-	session, err := sessionService.GetByID(sessionCookie.Value)
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, "Session not found")
-	}
-
-	claims, err := common.ParseJWTSignedRefreshToken(session.RefreshToken)
-	sessionService.InvalidateSession(c, session.SessionID)
-	if err != nil {
-		if strings.Contains(err.Error(), "token is expired") {
-			return common.SendForbiddenResponse(c, "Token is expired")
-		}
-		return common.SendForbiddenResponse(c, "Invalid access token")
-	}
-
-	userService := services.NewUserService(h.DB)
-	user, err := userService.GetById(claims.ID)
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, "User not found")
-	}
-
-	accessToken, refreshToken, err := common.GenerateJWT(*user)
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
-	}
-
-	newSessionID, err := common.GenerateSessionID()
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
-	}
-
-	newSession := models.SessionModel{
-		UserID:       user.ID,
-		SessionID:    newSessionID,
-		AccessToken:  *accessToken,
-		RefreshToken: *refreshToken,
-		IPAddress:    c.RealIP(),
-		UserAgent:    c.Request().Header.Get("User-Agent"),
-		ExpiresAt:    common.GetRefreshTokenExpirationTime(),
-	}
-
-	_, err = sessionService.CreateSession(newSession)
-	if err != nil {
-		return common.SendInternalServerErrorResponse(c, err.Error())
-	}
-
-	c.SetCookie(&http.Cookie{
-		Name:     "session_id",
-		Value:    newSessionID,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/",
-	})
+		Secure:   false, // true для HTTPS
+		SameSite: http.SameSiteLaxMode,
+		Expires:  session.ExpiresAt,
+	}
+	c.SetCookie(cookie)
 
-	return common.SendSuccessResponse(c, "Token refreshed", map[string]interface{}{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-		"user":          user,
-	})
+	return common.SendSuccessResponse(c, "User logged in",
+		&response.AuthDataResponse{
+			User:      userRetrieved,
+			SessionID: session.ID,
+			ExpiresAt: session.ExpiresAt,
+		})
 }
 
 func (h *Handler) TestAuthenticatedUser(c echo.Context) error {
@@ -203,24 +120,23 @@ func (h *Handler) TestAuthenticatedUser(c echo.Context) error {
 }
 
 func (h *Handler) LogoutHandler(c echo.Context) error {
-	c.SetCookie(&http.Cookie{
+	sessionID, _ := c.Get("session_id").(string)
+
+	fmt.Println("Session ID from context:", sessionID)
+
+	sessionService := services.NewSessionService(h.DB)
+	err := sessionService.RevokeSession(sessionID)
+	if err != nil {
+		fmt.Println("Failed to revoke session:", err)
+	}
+	cookie := &http.Cookie{
 		Name:     "session_id",
 		Value:    "",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(-1 * time.Hour),
 		Path:     "/",
-	})
-	sessionCookie, err := c.Cookie("session_id")
-	if err == nil {
-		sessionService := services.NewSessionService(h.DB)
-		session, err := sessionService.GetByID(sessionCookie.Value)
-		if err == nil {
-			_ = sessionService.DeleteSession(session.SessionID)
-		}
+		HttpOnly: true,
+		MaxAge:   -1,
 	}
+	c.SetCookie(cookie)
 
-	fmt.Println("LogoutHandler", sessionCookie)
 	return common.SendSuccessResponse(c, "User logged out", nil)
 }

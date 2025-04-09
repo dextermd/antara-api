@@ -1,10 +1,11 @@
 package services
 
 import (
+	"antara-api/cmd/api/dtos"
+	"antara-api/common"
 	"antara-api/internal/models"
-	"github.com/labstack/echo/v4"
+	"fmt"
 	"gorm.io/gorm"
-	"net/http"
 	"time"
 )
 
@@ -16,48 +17,119 @@ func NewSessionService(db *gorm.DB) *SessionService {
 	return &SessionService{db: db}
 }
 
-func (sessionService *SessionService) List() ([]models.SessionModel, error) {
-	return nil, nil
-}
+func (sessionService *SessionService) CreateSession(userID uint, device, userAgent, ip string) (*models.SessionModel, error) {
+	sessionID, err := common.GenerateSessionID()
+	if err != nil {
+		return nil, err
+	}
 
-func (sessionService *SessionService) CreateSession(session models.SessionModel) (*models.SessionModel, error) {
+	session := models.SessionModel{
+		ID:        sessionID,
+		UserID:    userID,
+		Device:    device,
+		UserAgent: userAgent,
+		IPAddress: ip,
+		IsActive:  true,
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour), // 30 дней
+	}
+
 	result := sessionService.db.Create(&session)
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return &session, nil
 }
 
-func (sessionService *SessionService) GetByID(sessionId string) (*models.SessionModel, error) {
+func (sessionService *SessionService) ValidateSession(sessionID string) (*models.UserModel, error) {
 	var session models.SessionModel
-	result := sessionService.db.Where("session_id = ?", sessionId).First(&session)
+
+	result := sessionService.db.Where("id = ? AND is_active = ? AND expires_at > ?", sessionID, true, time.Now()).First(&session)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return &session, nil
+
+	var user models.UserModel
+	result = sessionService.db.First(&user, session.UserID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	if !user.IsActive {
+		return nil, fmt.Errorf("аккаунт заблокирован")
+	}
+
+	sessionService.db.Model(&session).Update("updated_at", time.Now())
+	return &user, nil
 }
 
-func (sessionService *SessionService) DeleteSession(sessionId string) error {
-	result := sessionService.db.Where("session_id = ?", sessionId).Delete(&models.SessionModel{})
+func (sessionService *SessionService) GetSessions(userID uint, currentSessionID string) ([]dtos.SessionInfo, error) {
+	var sessions []models.SessionModel
+
+	result := sessionService.db.Where("user_id = ? AND is_active = ?", userID, true).Order("created_at desc").Find(&sessions)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	var currentSessionInfo []dtos.SessionInfo
+	for _, session := range sessions {
+		currentSessionInfo = append(currentSessionInfo, dtos.SessionInfo{
+			ID:        session.ID,
+			Device:    session.Device,
+			UserAgent: session.UserAgent,
+			IP:        session.IPAddress,
+			IsActive:  session.IsActive,
+			IsCurrent: session.ID == currentSessionID,
+			CreatedAt: session.CreatedAt,
+			LastUsed:  session.LastActivity,
+		})
+	}
+
+	return currentSessionInfo, nil
+
+}
+
+func (sessionService *SessionService) GetUserFromSession(sessionID string) (*models.UserModel, error) {
+	if sessionID == "" {
+		return nil, nil
+	}
+
+	user, err := sessionService.ValidateSession(sessionID)
+	if err != nil {
+		return nil, nil
+	}
+
+	return user, nil
+}
+
+func (sessionService *SessionService) UpdateSessionActivity(sessionID string, userID uint) error {
+	result := sessionService.db.Model(&models.SessionModel{}).Where("id = ? AND user_id = ?", sessionID, userID).Update("last_activity", time.Now())
 	if result.Error != nil {
 		return result.Error
 	}
 	return nil
 }
 
-func (sessionService *SessionService) InvalidateSession(c echo.Context, sessionID string) {
-	c.SetCookie(&http.Cookie{
-		Name:     "session_id",
-		Value:    "",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(-1 * time.Hour),
-		Path:     "/",
-	})
-
-	err := sessionService.DeleteSession(sessionID)
-	if err != nil {
-		c.Logger().Error("Failed to delete session: ", err)
+func (sessionService *SessionService) DeleteSession(sessionID string, userID uint) error {
+	result := sessionService.db.Where("id = ? AND user_id = ?", sessionID, userID).Delete(&models.SessionModel{})
+	if result.Error != nil {
+		return result.Error
 	}
+	return nil
+}
+
+func (sessionService *SessionService) RevokeSession(sessionID string) error {
+	result := sessionService.db.Where("id = ?", sessionID).Update("is_active", false)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (sessionService *SessionService) RevokeAllSessions(userID uint, exceptSessionID string) error {
+	result := sessionService.db.Where("user_id = ? AND id != ?", userID, exceptSessionID).Update("is_active", false)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

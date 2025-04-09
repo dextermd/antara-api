@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"antara-api/cmd/api/requests"
+	"antara-api/cmd/api/dtos/requests"
 	"antara-api/cmd/api/services"
 	"antara-api/common"
 	"antara-api/internal/mailer"

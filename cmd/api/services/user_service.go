@@ -1,7 +1,7 @@
 package services
 
 import (
-	"antara-api/cmd/api/requests"
+	"antara-api/cmd/api/dtos/requests"
 	"antara-api/common"
 	"antara-api/internal/models"
 	"errors"
@@ -18,15 +18,15 @@ func NewUserService(db *gorm.DB) *UserService {
 }
 
 func (userService *UserService) CreateUser(signUpRequest *requests.SignUpRequest) (*models.UserModel, error) {
-	hashedPassword, err := common.HashPassword(signUpRequest.Password)
+	passwordHash, err := common.HashPassword(signUpRequest.Password)
 	if err != nil {
 		return nil, errors.New("register failed")
 	}
 
 	createdUser := models.UserModel{
-		Name:     &signUpRequest.Name,
-		Email:    signUpRequest.Email,
-		Password: hashedPassword,
+		Email:        signUpRequest.Email,
+		PasswordHash: passwordHash,
+		IsActive:     true,
 	}
 	result := userService.db.Create(&createdUser)
 	if result.Error != nil {
@@ -38,16 +38,8 @@ func (userService *UserService) CreateUser(signUpRequest *requests.SignUpRequest
 
 func (userService *UserService) GetByEmail(email string) (*models.UserModel, error) {
 	var user models.UserModel
-	result := userService.db.Preload("Roles").Where("email = ?", email).First(&user)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &user, nil
-}
 
-func (userService *UserService) GetById(id uint) (*models.UserModel, error) {
-	var user models.UserModel
-	result := userService.db.Preload("Roles").First(&user, id)
+	result := userService.db.Preload("Roles").Where("email = ?", email).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

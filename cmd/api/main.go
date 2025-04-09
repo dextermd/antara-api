@@ -60,7 +60,7 @@ func main() {
 		appMiddleware: appMiddleware,
 	}
 
-	e.Use(middlewares.CustomMiddleware, middleware.Logger(), middleware.Recover())
+	e.Use(middlewares.CustomMiddleware, middlewares.CartMiddleware, middleware.Logger(), middleware.Recover())
 
 	app.routes(e, h)
 	fmt.Println(app)

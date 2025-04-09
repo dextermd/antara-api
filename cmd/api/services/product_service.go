@@ -33,3 +33,13 @@ func (c ProductService) GetBySlug(db *gorm.DB, slug string) (*models.ProductMode
 
 	return &product, nil
 }
+
+func (c ProductService) GetByID(db *gorm.DB, productID uint) (*models.ProductModel, error) {
+	var product models.ProductModel
+	result := db.Where("id = ?", productID).First(&product)
+	if result.Error != nil {
+		return nil, errors.New("failed to fetch product by slug")
+	}
+
+	return &product, nil
+}

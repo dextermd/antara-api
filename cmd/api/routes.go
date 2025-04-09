@@ -14,13 +14,12 @@ func (app *Application) routes(e *echo.Echo, handler handlers.Handler) {
 		publicAuthRoutes.POST("/login", handler.SignInHandler)
 		publicAuthRoutes.POST("/forgot/password", handler.ForgotPasswordHandler)
 		publicAuthRoutes.POST("/reset/password", handler.ResetPasswordHandler)
-		publicAuthRoutes.POST("/refresh", handler.RefreshTokenHandler)
 		publicAuthRoutes.POST("/logout", handler.LogoutHandler)
 	}
 
 	profileRoutes := apiGroup.Group("/profile", app.appMiddleware.AuthenticationMiddleware)
 	{
-		profileRoutes.GET("/authenticated/user", handler.GetAuthenticatedUser)
+		profileRoutes.GET("/authenticated/user", handler.GetProfile)
 		profileRoutes.PATCH("/change/password", handler.ChangeUserPassword)
 	}
 
@@ -29,10 +28,16 @@ func (app *Application) routes(e *echo.Echo, handler handlers.Handler) {
 		mCategoryRoutes.GET("/all", handler.ListCategoriesHandler)
 	}
 
-	productRoutes := apiGroup.Group("/products", app.appMiddleware.AuthenticationMiddleware)
+	productRoutes := apiGroup.Group("/products")
 	{
 		productRoutes.GET("/all", handler.ListProductsHandler)
 		productRoutes.GET("/:slug", handler.GetProductBySlagHandler)
+	}
+	cartRoutes := apiGroup.Group("/cart")
+	{
+		cartRoutes.POST("/add", handler.AddItemToCart)
+		cartRoutes.POST("/remove", handler.RemoveItemFromCart)
+		cartRoutes.GET("/get", handler.GetCartHandler)
 	}
 
 	apiGroup.GET("", handler.HealthCheck)

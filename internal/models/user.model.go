@@ -6,19 +6,16 @@ import (
 
 type UserModel struct {
 	BaseModel
-	Name          *string    `gorm:"type:varchar(255);default:'No Name'" json:"name"`
-	Email         string     `gorm:"type:varchar(255);unique;not null" json:"email"`
-	EmailVerified *time.Time `gorm:"type:timestamp;default:null" json:"email_verified"`
-	Images        *string    `gorm:"type:text;default:null" json:"images"`
-	Password      string     `gorm:"type:varchar(255);default:null" json:"-"`
-	PaymentMethod *string    `gorm:"type:varchar(255);default:null" json:"payment_method"`
-	LastOnline    time.Time  `gorm:"autoUpdateTime" json:"last_online"`
-
-	Roles             []RoleModel            `gorm:"many2many:user_has_roles;joinForeignKey:UserID;joinReferences:RoleID" json:"roles"`
-	Carts             []CartModel            `gorm:"foreignKey:UserID" json:"carts"`
-	Accounts          []AccountModel         `gorm:"foreignKey:UserID" json:"accounts"`
-	Sessions          []SessionModel         `gorm:"foreignKey:UserID" json:"sessions"`
-	ShippingAddresses []ShippingAddressModel `gorm:"foreignKey:UserID" json:"shipping_addresses"`
+	FirstName     *string               `gorm:"type:varchar(255)" json:"first_name,omitempty"`
+	LastName      *string               `gorm:"type:varchar(255)" json:"last_name,omitempty"`
+	Email         string                `gorm:"type:varchar(255);unique;not null" json:"email,omitempty"`
+	EmailVerified *time.Time            `gorm:"type:timestamp;default:null" json:"email_verified,omitempty"`
+	AvatarURL     *string               `gorm:"type:text" json:"avatar_url,omitempty"`
+	PasswordHash  string                `gorm:"type:varchar(255);default:null" json:"-"`
+	IsActive      bool                  `gorm:"default:true" json:"is_active,omitempty"`
+	Sessions      []SessionModel        `gorm:"foreignKey:UserID" json:"sessions,omitempty"`
+	Providers     []SocialProviderModel `gorm:"foreignKey:UserID" json:"providers,omitempty"`
+	Roles         []RoleModel           `gorm:"many2many:user_has_roles;joinForeignKey:UserID;joinReferences:RoleID" json:"roles,omitempty"`
 }
 
 func (u *UserModel) TableName() string {

@@ -15,6 +15,7 @@ func main() {
 	err = db.AutoMigrate(
 		&models.RoleModel{},
 		&models.CartModel{},
+		&models.SocialProviderModel{},
 		&models.ShippingAddressModel{},
 		&models.UserModel{},
 		&models.VerificationTokenModel{},
@@ -22,8 +23,9 @@ func main() {
 		&models.ProductModel{},
 		&models.OptionModel{},
 		&models.MCategoryModel{},
-		&models.AccountModel{},
 		&models.SessionModel{},
+		&models.CartItemModel{},
+		&models.PageModel{},
 	)
 
 	if err != nil {
