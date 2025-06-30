@@ -17,6 +17,16 @@ type JSONSuccessResponse struct {
 	Data    any    `json:"data"`
 }
 
+type JSONSuccessPaginationResponse struct {
+	Total      int64  `json:"total"`
+	Page       int    `json:"page"`
+	PageSize   int    `json:"pageSize"`
+	TotalPages int    `json:"totalPages"`
+	Success    bool   `json:"success"`
+	Message    string `json:"message"`
+	Data       any    `json:"data"`
+}
+
 type JSONFailedValidationResponse struct {
 	Success bool               `json:"success"`
 	Errors  []*ValidationError `json:"errors"`
@@ -33,6 +43,18 @@ func SendSuccessResponse(c echo.Context, message string, data any) error {
 		Success: true,
 		Message: message,
 		Data:    data,
+	})
+}
+
+func SendSuccessPaginationResponse(c echo.Context, message string, data any, total int64, page int, pageSize int, totalPages int) error {
+	return c.JSON(http.StatusOK, JSONSuccessPaginationResponse{
+		Data:       data,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+		Message:    message,
+		Success:    true,
 	})
 }
 

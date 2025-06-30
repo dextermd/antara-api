@@ -26,6 +26,8 @@ func main() {
 		&models.SessionModel{},
 		&models.CartItemModel{},
 		&models.PageModel{},
+		&models.TempImageModel{},
+		&models.PageImageModel{},
 	)
 
 	if err != nil {

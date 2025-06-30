@@ -50,7 +50,7 @@ func (sessionService *SessionService) ValidateSession(sessionID string) (*models
 	}
 
 	var user models.UserModel
-	result = sessionService.db.First(&user, session.UserID)
+	result = sessionService.db.Preload("Roles").First(&user, session.UserID)
 	if result.Error != nil {
 		return nil, result.Error
 	}

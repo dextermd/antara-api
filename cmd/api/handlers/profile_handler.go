@@ -5,13 +5,11 @@ import (
 	"antara-api/cmd/api/services"
 	"antara-api/common"
 	"antara-api/internal/models"
-	"fmt"
 	"github.com/labstack/echo/v4"
 )
 
 func (h *Handler) GetProfile(c echo.Context) error {
 	user, ok := c.Get("user").(*models.UserModel)
-	fmt.Println("User from context:", user)
 	if !ok {
 		return common.SendInternalServerErrorResponse(c, "User authentication failed")
 	}

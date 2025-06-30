@@ -47,8 +47,8 @@ func main() {
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{"http://localhost:4200", "http://127.0.0.1:4200"},
-		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
-		AllowHeaders:     []string{"Content-Type", "Authorization", "Cookie", "Set-Cookie"},
+		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS, echo.PATCH},
+		AllowHeaders:     []string{"Content-Type", "Authorization", "Cookie", "Set-Cookie", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"},
 		ExposeHeaders:    []string{"Set-Cookie"},
 		AllowCredentials: true,
 	}))
